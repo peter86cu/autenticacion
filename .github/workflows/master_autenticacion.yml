@@ -14,7 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # Clonar el repositorio y los submódulos
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Set up Java version
         uses: actions/setup-java@v1
@@ -28,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          path: '${{ github.workspace }}/acceso-auth/target/*.war'
 
   deploy:
     runs-on: ubuntu-latest
@@ -50,4 +54,4 @@ jobs:
           app-name: 'autenticacion'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FD889BA9317B4E4FB1009220256B84D6 }}
-          package: '*.jar'
+          package: '*.war'
