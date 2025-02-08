@@ -12,27 +12,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
-      # Clonar el repositorio y los submódulos
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+      - uses: actions/checkout@v4
 
       - name: Set up Java version
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
+          distribution: 'microsoft'
 
       - name: Build with Maven
         run: mvn clean install
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/acceso-auth/target/*.war'
+          path: '${{ github.workspace }}/target/*.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -40,18 +39,28 @@ jobs:
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+  
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: java-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_75F8B0E4FF0E4EA4B1B90E8B5834423D }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B670644C92364CBFA03CE7863BEECC2A }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C89740A3CDA44AB1955E6182B2E15DFE }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'autenticacion'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FD889BA9317B4E4FB1009220256B84D6 }}
-          package: '*.war'
+          package: '*.jar'
+          
